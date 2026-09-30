@@ -1,0 +1,186 @@
+{% extends "base.html" %}
+{% block title %}My Visualizations - Student Portal{% endblock %}
+{% block page_title %}My Visualizations & Analytics{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+    <div>
+        <h2 class="fw-bold mb-1">Visual Analytics & Performance Trends</h2>
+        <p class="text-muted mb-0">Easy-to-understand visual charts mapping your academic journey and metrics.</p>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-lg-6">
+        <div class="chart-card h-100">
+            <h5 class="fw-bold mb-3">Marks Distribution Across Components</h5>
+            <div class="chart-wrapper">
+                <canvas id="marksDistributionChart"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="chart-card h-100">
+            <h5 class="fw-bold mb-3">Semester Progression Trend</h5>
+            <div class="chart-wrapper">
+                <canvas id="progressionLineChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-6">
+        <div class="chart-card h-100">
+            <h5 class="fw-bold mb-3">Attendance Breakdown</h5>
+            <div class="chart-wrapper d-flex justify-content-center">
+                <canvas id="attendanceDonutChart"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="chart-card h-100">
+            <h5 class="fw-bold mb-3">Core Indicator Completion</h5>
+            <div class="mb-3">
+                <div class="d-flex justify-content-between mb-1">
+                    <span class="small fw-bold">Attendance (Target: 85%)</span>
+                    <span class="small fw-bold text-primary">{{ student.attendance }}%</span>
+                </div>
+                <div class="progress" style="height: 10px;">
+                    <div class="progress-bar bg-primary" style="width: {{ student.attendance }}%;"></div>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <div class="d-flex justify-content-between mb-1">
+                    <span class="small fw-bold">Internal Marks (Target: 80%)</span>
+                    <span class="small fw-bold text-success">{{ student.internal_marks }}%</span>
+                </div>
+                <div class="progress" style="height: 10px;">
+                    <div class="progress-bar bg-success" style="width: {{ student.internal_marks }}%;"></div>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <div class="d-flex justify-content-between mb-1">
+                    <span class="small fw-bold">Assignments (Target: 85%)</span>
+                    <span class="small fw-bold text-warning">{{ student.assignment_score }}%</span>
+                </div>
+                <div class="progress" style="height: 10px;">
+                    <div class="progress-bar bg-warning" style="width: {{ student.assignment_score }}%;"></div>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <div class="d-flex justify-content-between mb-1">
+                    <span class="small fw-bold">Participation (Target: 80%)</span>
+                    <span class="small fw-bold text-purple">{{ student.participation }}%</span>
+                </div>
+                <div class="progress" style="height: 10px;">
+                    <div class="progress-bar" style="width: {{ student.participation }}%; background-color: #8b5cf6;"></div>
+                </div>
+            </div>
+
+            <div>
+                <div class="d-flex justify-content-between mb-1">
+                    <span class="small fw-bold">Daily Study Hours (Target: 5.0h)</span>
+                    <span class="small fw-bold text-info">{{ student.study_hours }}h / 5.0h</span>
+                </div>
+                <div class="progress" style="height: 10px;">
+                    <div class="progress-bar bg-info" style="width: {{ (student.study_hours / 5.0 * 100)|round }}%;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    const textColor = isDark ? '#94a3b8' : '#64748b';
+    const gridColor = isDark ? 'rgba(148, 163, 184, 0.1)' : 'rgba(0, 0, 0, 0.05)';
+
+    // Marks Distribution Polar/Bar
+    const barCtx = document.getElementById('marksDistributionChart').getContext('2d');
+    new Chart(barCtx, {
+        type: 'bar',
+        data: {
+            labels: ['Attendance', 'Internals', 'Assignments', 'Prev Sem', 'Participation'],
+            datasets: [{
+                label: 'Score (%)',
+                data: [
+                    {{ student.attendance }},
+                    {{ student.internal_marks }},
+                    {{ student.assignment_score }},
+                    {{ student.previous_sem_marks }},
+                    {{ student.participation }}
+                ],
+                backgroundColor: ['#4f46e5', '#3b82f6', '#f59e0b', '#10b981', '#8b5cf6'],
+                borderRadius: 8
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: { min: 0, max: 100, grid: { color: gridColor }, ticks: { color: textColor } },
+                x: { grid: { display: false }, ticks: { color: textColor } }
+            },
+            plugins: { legend: { display: false } }
+        }
+    });
+
+    // Progression Line Chart
+    const lineCtx = document.getElementById('progressionLineChart').getContext('2d');
+    new Chart(lineCtx, {
+        type: 'line',
+        data: {
+            labels: ['Previous Semester', 'Internal Assessment', 'Assignment Score', 'Current Overall'],
+            datasets: [{
+                label: 'Performance Path (%)',
+                data: [
+                    {{ student.previous_sem_marks }},
+                    {{ student.internal_marks }},
+                    {{ student.assignment_score }},
+                    {{ student.overall_score }}
+                ],
+                borderColor: '#4f46e5',
+                backgroundColor: 'rgba(79, 70, 229, 0.15)',
+                tension: 0.35,
+                fill: true,
+                pointRadius: 6,
+                pointBackgroundColor: '#4f46e5'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: { min: 40, max: 100, grid: { color: gridColor }, ticks: { color: textColor } },
+                x: { grid: { color: gridColor }, ticks: { color: textColor } }
+            },
+            plugins: { legend: { display: false } }
+        }
+    });
+
+    // Attendance Donut
+    const donutCtx = document.getElementById('attendanceDonutChart').getContext('2d');
+    new Chart(donutCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Attended (%)', 'Absence (%)'],
+            datasets: [{
+                data: [{{ student.attendance }}, {{ 100 - student.attendance }}],
+                backgroundColor: ['#10b981', '#ef4444'],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { position: 'bottom', labels: { color: textColor } } }
+        }
+    });
+</script>
+{% endblock %}

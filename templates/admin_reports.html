@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}Reports & Evaluation Documents - Teacher Portal{% endblock %}
+{% block page_title %}Academic Evaluation Reports{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+    <div>
+        <h2 class="fw-bold mb-1">Generated Evaluation Reports</h2>
+        <p class="text-muted mb-0">Access printable and downloadable PDF academic reports for students and predictions.</p>
+    </div>
+</div>
+
+<div class="table-card">
+    <div class="table-card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <h5 class="fw-bold mb-0">All Evaluation Records</h5>
+        <span class="text-muted small">Total: {{ records|length }} reports</span>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Student Name</th>
+                    <th>Attendance</th>
+                    <th>Internal Marks</th>
+                    <th>Assignments</th>
+                    <th>Study Hours</th>
+                    <th>Predicted Tier</th>
+                    <th>Generated Date</th>
+                    <th class="text-end">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if records %}
+                    {% for r in records %}
+                    <tr>
+                        <td>{{ r.id }}</td>
+                        <td class="fw-bold">{{ r.student_name }}</td>
+                        <td>{{ r.attendance }}%</td>
+                        <td>{{ r.internal_marks }}%</td>
+                        <td>{{ r.assignment_score }}%</td>
+                        <td>{{ r.study_hours }}h</td>
+                        <td>
+                            <span class="badge {% if r.prediction == 'Excellent' %}badge-excellent{% elif r.prediction == 'Average' %}badge-average{% else %}badge-at-risk{% endif %}">
+                                {{ r.prediction }}
+                            </span>
+                        </td>
+                        <td><small class="text-muted">{{ r.created_at }}</small></td>
+                        <td class="text-end">
+                            <a href="/report/{{ r.id }}" class="btn btn-sm btn-outline-primary fw-semibold">
+                                📄 View PDF Report
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="9" class="text-center py-5 text-muted">
+                            No evaluation reports found yet. Run an AI Prediction from the Prediction page to generate one.
+                        </td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+{% block title %}Student Management - Teacher Portal{% endblock %}
+{% block page_title %}Student Management{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+    <div>
+        <h2 class="fw-bold mb-1">Student Directory</h2>
+        <p class="text-muted mb-0">Manage enrolled student profiles, academic metrics, and ML evaluations.</p>
+    </div>
+    <a href="/admin/students/add" class="btn btn-primary fw-bold shadow-sm">
+        ➕ Add New Student
+    </a>
+</div>
+
+<!-- Slicer / Filter Bar -->
+<div class="filter-card mb-4">
+    <form method="GET" action="/admin/students" class="row g-3 align-items-end">
+        <div class="col-md-4">
+            <label class="form-label small fw-bold text-muted">SEARCH STUDENT</label>
+            <input type="text" name="q" class="form-control" placeholder="Search by name, ID, or course..." value="{{ query or '' }}" />
+        </div>
+        <div class="col-md-3">
+            <label class="form-label small fw-bold text-muted">DEPARTMENT / COURSE</label>
+            <select name="dept" class="form-select">
+                <option value="">All Departments</option>
+                {% for d in departments %}
+                <option value="{{ d }}" {% if selected_dept == d %}selected{% endif %}>{{ d }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label small fw-bold text-muted">PERFORMANCE TIER</label>
+            <select name="status" class="form-select">
+                <option value="">All Tiers</option>
+                <option value="Excellent" {% if selected_status == 'Excellent' %}selected{% endif %}>Excellent</option>
+                <option value="Average" {% if selected_status == 'Average' %}selected{% endif %}>Average</option>
+                <option value="At Risk" {% if selected_status == 'At Risk' %}selected{% endif %}>At Risk</option>
+            </select>
+        </div>
+        <div class="col-md-2 d-flex gap-2">
+            <button type="submit" class="btn btn-primary w-100 fw-semibold">Filter</button>
+            <a href="/admin/students" class="btn btn-outline-secondary" title="Clear Filters">↺</a>
+        </div>
+    </form>
+</div>
+
+<!-- Students Table -->
+<div class="table-card">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead>
+                <tr>
+                    <th>Student ID</th>
+                    <th>Full Name</th>
+                    <th>Class / Dept</th>
+                    <th>Attendance</th>
+                    <th>Internal Marks</th>
+                    <th>Assignments</th>
+                    <th>Study Hours</th>
+                    <th>Overall Score</th>
+                    <th>Predicted Tier</th>
+                    <th class="text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if students %}
+                    {% for s in students %}
+                    <tr>
+                        <td><code>{{ s.student_id }}</code></td>
+                        <td>
+                            <div class="fw-bold">{{ s.name }}</div>
+                            <small class="text-muted">{{ s.semester }}</small>
+                        </td>
+                        <td>{{ s.department }}</td>
+                        <td>
+                            <span class="fw-bold {% if s.attendance < 75 %}text-danger{% else %}text-success{% endif %}">
+                                {{ s.attendance }}%
+                            </span>
+                        </td>
+                        <td>{{ s.internal_marks }}%</td>
+                        <td>{{ s.assignment_score }}%</td>
+                        <td>{{ s.study_hours }}h</td>
+                        <td>
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="fw-bold">{{ s.overall_score }}%</span>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="badge {% if s.predicted_performance == 'Excellent' %}badge-excellent{% elif s.predicted_performance == 'Average' %}badge-average{% else %}badge-at-risk{% endif %}">
+                                {{ s.predicted_performance }}
+                            </span>
+                        </td>
+                        <td class="text-end">
+                            <div class="btn-group btn-group-sm">
+                                <a href="/admin/students/edit/{{ s.id }}" class="btn btn-outline-secondary" title="Edit Student">✏️ Edit</a>
+                                <a href="/admin/performance?student_id={{ s.student_id }}" class="btn btn-outline-info" title="View Performance">📊</a>
+                                <form action="/admin/students/delete/{{ s.id }}" method="POST" onsubmit="return confirm('Are you sure you want to delete student {{ s.name }}? This action cannot be undone.');" style="display:inline;">
+                                    <button type="submit" class="btn btn-outline-danger" title="Delete Student">🗑️</button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="10" class="text-center py-5 text-muted">
+                            No students found matching your criteria. Try resetting the filters or add a new student.
+                        </td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

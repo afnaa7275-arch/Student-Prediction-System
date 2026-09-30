@@ -1,0 +1,174 @@
+{% extends "base.html" %}
+{% block title %}My Academic Goals - Student Portal{% endblock %}
+{% block page_title %}My Goals & Target Tracking{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+    <div>
+        <h2 class="fw-bold mb-1">Academic Targets & Progress</h2>
+        <p class="text-muted mb-0">Track your target goals versus your current metrics using live visual progress indicators.</p>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Progress Bars Section -->
+    <div class="col-lg-7">
+        <div class="chart-card h-100">
+            <h5 class="fw-bold mb-4">Current Progress Toward Targets</h5>
+
+            <!-- Attendance Goal -->
+            <div class="mb-4">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="fw-bold">Attendance Goal</span>
+                    <span class="small text-muted">
+                        Current: <strong>{{ student.attendance }}%</strong> | Target: <strong>{{ goals.target_attendance }}%</strong>
+                    </span>
+                </div>
+                <div class="progress" style="height: 12px;">
+                    <div class="progress-bar {% if student.attendance >= goals.target_attendance %}bg-success{% else %}bg-primary{% endif %}"
+                         style="width: {{ (student.attendance / goals.target_attendance * 100)|round if goals.target_attendance > 0 else 0 }}%;"></div>
+                </div>
+                <div class="d-flex justify-content-between small text-muted mt-1">
+                    <span>0%</span>
+                    <span>
+                        {% if student.attendance >= goals.target_attendance %}
+                            🎉 Target Achieved!
+                        {% else %}
+                            {{ (goals.target_attendance - student.attendance)|round(1) }}% needed to reach target
+                        {% endif %}
+                    </span>
+                    <span>{{ goals.target_attendance }}%</span>
+                </div>
+            </div>
+
+            <!-- Internal Marks Goal -->
+            <div class="mb-4">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="fw-bold">Internal Assessment Marks Goal</span>
+                    <span class="small text-muted">
+                        Current: <strong>{{ student.internal_marks }}%</strong> | Target: <strong>{{ goals.target_internal_marks }}%</strong>
+                    </span>
+                </div>
+                <div class="progress" style="height: 12px;">
+                    <div class="progress-bar {% if student.internal_marks >= goals.target_internal_marks %}bg-success{% else %}bg-info{% endif %}"
+                         style="width: {{ (student.internal_marks / goals.target_internal_marks * 100)|round if goals.target_internal_marks > 0 else 0 }}%;"></div>
+                </div>
+                <div class="d-flex justify-content-between small text-muted mt-1">
+                    <span>0%</span>
+                    <span>
+                        {% if student.internal_marks >= goals.target_internal_marks %}
+                            🎉 Target Achieved!
+                        {% else %}
+                            {{ (goals.target_internal_marks - student.internal_marks)|round(1) }}% needed
+                        {% endif %}
+                    </span>
+                    <span>{{ goals.target_internal_marks }}%</span>
+                </div>
+            </div>
+
+            <!-- Assignment Score Goal -->
+            <div class="mb-4">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="fw-bold">Assignment Score Goal</span>
+                    <span class="small text-muted">
+                        Current: <strong>{{ student.assignment_score }}%</strong> | Target: <strong>{{ goals.target_assignment_score }}%</strong>
+                    </span>
+                </div>
+                <div class="progress" style="height: 12px;">
+                    <div class="progress-bar {% if student.assignment_score >= goals.target_assignment_score %}bg-success{% else %}bg-warning{% endif %}"
+                         style="width: {{ (student.assignment_score / goals.target_assignment_score * 100)|round if goals.target_assignment_score > 0 else 0 }}%;"></div>
+                </div>
+                <div class="d-flex justify-content-between small text-muted mt-1">
+                    <span>0%</span>
+                    <span>
+                        {% if student.assignment_score >= goals.target_assignment_score %}
+                            🎉 Target Achieved!
+                        {% else %}
+                            {{ (goals.target_assignment_score - student.assignment_score)|round(1) }}% needed
+                        {% endif %}
+                    </span>
+                    <span>{{ goals.target_assignment_score }}%</span>
+                </div>
+            </div>
+
+            <!-- Daily Study Hours Goal -->
+            <div class="mb-4">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="fw-bold">Daily Study Hours Goal</span>
+                    <span class="small text-muted">
+                        Current: <strong>{{ student.study_hours }}h</strong> | Target: <strong>{{ goals.target_study_hours }}h</strong>
+                    </span>
+                </div>
+                <div class="progress" style="height: 12px;">
+                    <div class="progress-bar bg-purple"
+                         style="width: {{ (student.study_hours / goals.target_study_hours * 100)|round if goals.target_study_hours > 0 else 0 }}%; background-color: #8b5cf6;"></div>
+                </div>
+                <div class="d-flex justify-content-between small text-muted mt-1">
+                    <span>0h</span>
+                    <span>
+                        {% if student.study_hours >= goals.target_study_hours %}
+                            🎉 Target Achieved!
+                        {% else %}
+                            {{ (goals.target_study_hours - student.study_hours)|round(1) }}h/day needed
+                        {% endif %}
+                    </span>
+                    <span>{{ goals.target_study_hours }}h</span>
+                </div>
+            </div>
+
+            <!-- Overall Score Target -->
+            <div>
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="fw-bold">Overall Composite Score Goal</span>
+                    <span class="small text-muted">
+                        Current: <strong>{{ student.overall_score }}%</strong> | Target: <strong>{{ goals.target_overall }}%</strong>
+                    </span>
+                </div>
+                <div class="progress" style="height: 12px;">
+                    <div class="progress-bar {% if student.overall_score >= goals.target_overall %}bg-success{% else %}bg-primary{% endif %}"
+                         style="width: {{ (student.overall_score / goals.target_overall * 100)|round if goals.target_overall > 0 else 0 }}%;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Update Personal Targets Form -->
+    <div class="col-lg-5">
+        <div class="form-card h-100">
+            <h5 class="fw-bold mb-2">Update Personal Targets</h5>
+            <p class="text-muted small mb-4">Set realistic semester goals. These personal targets do not alter official grading records.</p>
+
+            <form action="/student/goals" method="POST">
+                <div class="mb-3">
+                    <label class="form-label" for="target_attendance">Target Attendance (%)</label>
+                    <input type="number" id="target_attendance" name="target_attendance" class="form-control" min="0" max="100" step="0.5" value="{{ goals.target_attendance }}" required />
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label" for="target_internal_marks">Target Internal Marks (%)</label>
+                    <input type="number" id="target_internal_marks" name="target_internal_marks" class="form-control" min="0" max="100" step="0.5" value="{{ goals.target_internal_marks }}" required />
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label" for="target_assignment_score">Target Assignment Score (%)</label>
+                    <input type="number" id="target_assignment_score" name="target_assignment_score" class="form-control" min="0" max="100" step="0.5" value="{{ goals.target_assignment_score }}" required />
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label" for="target_study_hours">Target Daily Study Hours (hrs/day)</label>
+                    <input type="number" id="target_study_hours" name="target_study_hours" class="form-control" min="0" max="24" step="0.5" value="{{ goals.target_study_hours }}" required />
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label" for="target_overall">Target Overall Composite Score (%)</label>
+                    <input type="number" id="target_overall" name="target_overall" class="form-control" min="0" max="100" step="0.5" value="{{ goals.target_overall }}" required />
+                </div>
+
+                <button type="submit" class="btn btn-primary w-100 fw-bold py-2 shadow-sm">
+                    💾 Save Personal Targets
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

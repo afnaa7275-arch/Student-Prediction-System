@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% block title %}Model Evaluation & Performance - Teacher Portal{% endblock %}
+{% block page_title %}Machine Learning Model Performance{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+    <div>
+        <h2 class="fw-bold mb-1">ML Model Evaluation Metrics</h2>
+        <p class="text-muted mb-0">Verification and evaluation metrics for the active performance classification algorithm.</p>
+    </div>
+    <span class="badge bg-success-subtle text-success border border-success px-3 py-2 fw-bold">
+        🟢 Status: Active & Deployed
+    </span>
+</div>
+
+<!-- Model Metric Cards -->
+<div class="metrics-grid mb-4">
+    <div class="stat-card">
+        <div class="label">Primary Model</div>
+        <div class="value fs-3 text-primary">{{ model_info.best_model_name }}</div>
+        <div class="stat-subtext text-muted">Supervised Classification</div>
+    </div>
+    <div class="stat-card">
+        <div class="label">Accuracy</div>
+        <div class="value fs-2 text-success">{{ (model_info.accuracy * 100)|round(2) }}%</div>
+        <div class="stat-subtext text-success">Test dataset benchmark</div>
+    </div>
+    <div class="stat-card">
+        <div class="label">Precision</div>
+        <div class="value fs-2 text-info">{{ (model_info.precision * 100)|round(2) }}%</div>
+        <div class="stat-subtext text-muted">Weighted average</div>
+    </div>
+    <div class="stat-card">
+        <div class="label">Recall</div>
+        <div class="value fs-2 text-primary">{{ (model_info.recall * 100)|round(2) }}%</div>
+        <div class="stat-subtext text-muted">True Positive Rate</div>
+    </div>
+    <div class="stat-card">
+        <div class="label">F1-Score</div>
+        <div class="value fs-2 text-warning">{{ (model_info.f1_score * 100)|round(2) }}%</div>
+        <div class="stat-subtext text-muted">Harmonic Mean</div>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <!-- Model Features Card -->
+    <div class="col-lg-6">
+        <div class="chart-card h-100">
+            <h5 class="fw-bold mb-3">Engineered Input Features</h5>
+            <p class="text-muted small">The model predicts student tiers using 8 carefully calibrated academic and behavioral features:</p>
+            <div class="list-group list-group-flush">
+                {% for feat in model_info.feature_names %}
+                <div class="list-group-item d-flex justify-content-between align-items-center bg-transparent py-3">
+                    <div>
+                        <code class="fw-bold text-primary">{{ feat }}</code>
+                        <div class="small text-muted">
+                            {% if feat == 'attendance' %}Percentage of lecture sessions attended (0-100%)
+                            {% elif feat == 'internal_marks' %}Internal examination assessment score (0-100%)
+                            {% elif feat == 'assignment_score' %}Continuous assignment & practical score (0-100%)
+                            {% elif feat == 'study_hours' %}Self-reported daily independent study duration (0-24h)
+                            {% elif feat == 'previous_sem_marks' %}Historical academic semester GPA / mark (0-100%)
+                            {% elif feat == 'participation' %}Classroom interaction and seminar engagement (0-100%)
+                            {% elif feat == 'overall_score' %}Arithmetic composite score across all 5 core pillars
+                            {% elif feat == 'study_performance' %}Engineered interaction feature factoring study intensity
+                            {% else %}Numerical evaluation metric{% endif %}
+                        </div>
+                    </div>
+                    <span class="badge bg-primary-subtle text-primary">Active Feature</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Target Classification Tiers -->
+    <div class="col-lg-6">
+        <div class="chart-card h-100">
+            <h5 class="fw-bold mb-3">Classification Classes & Decision Boundaries</h5>
+            <div class="p-3 rounded-3 mb-3 border" style="background: rgba(34, 197, 94, 0.08); border-color: rgba(34, 197, 94, 0.3) !important;">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge badge-excellent fs-6">Excellent</span>
+                    <span class="fw-bold">Consistently High Performance</span>
+                </div>
+                <p class="small text-muted mt-2 mb-0">High attendance (&gt;80%), internal marks &gt;80%, active participation, and disciplined study hours. Qualifies for advanced honors programs and peer mentorship.</p>
+            </div>
+
+            <div class="p-3 rounded-3 mb-3 border" style="background: rgba(245, 158, 11, 0.08); border-color: rgba(245, 158, 11, 0.3) !important;">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge badge-average fs-6">Average</span>
+                    <span class="fw-bold">Satisfactory Academic Standing</span>
+                </div>
+                <p class="small text-muted mt-2 mb-0">Solid foundational comprehension (60%-80%). Demonstrates clear upside with structured incremental study sessions and timely assignment reviews.</p>
+            </div>
+
+            <div class="p-3 rounded-3 border" style="background: rgba(239, 68, 68, 0.08); border-color: rgba(239, 68, 68, 0.3) !important;">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge badge-at-risk fs-6">At Risk</span>
+                    <span class="fw-bold">Early Academic Intervention Required</span>
+                </div>
+                <p class="small text-muted mt-2 mb-0">Low attendance (&lt;75%), internal evaluation gaps, or insufficient study routine (&lt;2h/day). Triggers targeted counseling and remedial support.</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

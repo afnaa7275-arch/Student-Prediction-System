@@ -1,0 +1,226 @@
+{% extends "base.html" %}
+{% block title %}Teacher Dashboard - Student Performance System{% endblock %}
+{% block page_title %}Teacher / Admin Dashboard{% endblock %}
+
+{% block content %}
+<div class="dashboard-header mb-4">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+        <div>
+            <h2 class="fw-bold mb-1">Welcome back, {{ current_user.username }}! 👋</h2>
+            <p class="text-muted mb-0">Overview of class academic indicators, model predictions, and performance analytics.</p>
+        </div>
+        <div class="d-flex gap-2 flex-wrap">
+            <a href="/admin/students/add" class="btn btn-primary fw-semibold shadow-sm">
+                ➕ Add Student
+            </a>
+            <a href="/prediction" class="btn btn-outline-primary fw-semibold shadow-sm">
+                🤖 Run Prediction
+            </a>
+            <a href="/admin/reports" class="btn btn-outline-secondary fw-semibold">
+                📑 View Reports
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Key Metric Cards -->
+<div class="metrics-grid">
+    <div class="stat-card">
+        <div class="stat-icon-wrapper bg-indigo-subtle">👥</div>
+        <div class="stat-content">
+            <div class="label">Total Students</div>
+            <div class="value">{{ stats.total_students }}</div>
+            <div class="stat-subtext text-muted">Enrolled in active cohorts</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon-wrapper bg-emerald-subtle">📊</div>
+        <div class="stat-content">
+            <div class="label">Average Performance</div>
+            <div class="value">{{ stats.avg_overall }}%</div>
+            <div class="stat-subtext text-success">Across all evaluations</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon-wrapper bg-blue-subtle">📅</div>
+        <div class="stat-content">
+            <div class="label">Average Attendance</div>
+            <div class="value">{{ stats.avg_attendance }}%</div>
+            <div class="stat-subtext {% if stats.avg_attendance >= 75 %}text-success{% else %}text-danger{% endif %}">
+                {% if stats.avg_attendance >= 75 %}Compliant with policy{% else %}Below 75% target{% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon-wrapper bg-rose-subtle">⚠️</div>
+        <div class="stat-content">
+            <div class="label">Students Needing Attention</div>
+            <div class="value text-danger">{{ stats.at_risk_count }}</div>
+            <div class="stat-subtext text-danger">{{ stats.risk_percentage }}% of class cohort</div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Grid -->
+<div class="row g-4 mb-4">
+    <div class="col-lg-7">
+        <div class="chart-card h-100">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="fw-bold mb-0">Class Performance Distribution</h5>
+                <span class="badge bg-light text-muted">All Subjects</span>
+            </div>
+            <div class="chart-wrapper">
+                <canvas id="classPerfChart"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-5">
+        <div class="chart-card h-100">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="fw-bold mb-0">Risk & Tier Breakdown</h5>
+                <span class="badge bg-light text-muted">Trained ML Classification</span>
+            </div>
+            <div class="chart-wrapper d-flex justify-content-center">
+                <canvas id="riskDonutChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Attention List & Quick Actions Table -->
+<div class="table-card">
+    <div class="table-card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div>
+            <h5 class="fw-bold mb-0">Students Requiring Academic Attention</h5>
+            <small class="text-muted">Students with overall score &lt; 65% or attendance &lt; 75%</small>
+        </div>
+        <a href="/admin/students" class="btn btn-sm btn-outline-primary">View All Students →</a>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead>
+                <tr>
+                    <th>Student</th>
+                    <th>ID & Course</th>
+                    <th>Attendance</th>
+                    <th>Internal Marks</th>
+                    <th>Study Hours</th>
+                    <th>Overall Score</th>
+                    <th>Predicted Tier</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if attention_students %}
+                    {% for s in attention_students %}
+                    <tr>
+                        <td>
+                            <div class="fw-bold">{{ s.name }}</div>
+                            <small class="text-muted">{{ s.email if s.email else 'Enrolled Student' }}</small>
+                        </td>
+                        <td>
+                            <div><code>{{ s.student_id }}</code></div>
+                            <small class="text-muted">{{ s.department }}</small>
+                        </td>
+                        <td>
+                            <span class="fw-semibold {% if s.attendance < 75 %}text-danger{% else %}text-success{% endif %}">
+                                {{ s.attendance }}%
+                            </span>
+                        </td>
+                        <td>{{ s.internal_marks }}%</td>
+                        <td>{{ s.study_hours }} hrs/day</td>
+                        <td>
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="progress flex-grow-1" style="height: 6px; width: 70px;">
+                                    <div class="progress-bar {% if s.overall_score >= 80 %}bg-success{% elif s.overall_score >= 60 %}bg-warning{% else %}bg-danger{% endif %}"
+                                         style="width: {{ s.overall_score }}%;"></div>
+                                </div>
+                                <span class="fw-bold small">{{ s.overall_score }}%</span>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="badge {% if s.predicted_performance == 'Excellent' %}badge-excellent{% elif s.predicted_performance == 'Average' %}badge-average{% else %}badge-at-risk{% endif %}">
+                                {{ s.predicted_performance }}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <a href="/admin/students/edit/{{ s.id }}" class="btn btn-outline-secondary">Edit</a>
+                                <a href="/admin/performance?student_id={{ s.student_id }}" class="btn btn-outline-primary">Analyze</a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="8" class="text-center py-4 text-muted">
+                            🎉 Great news! No students currently fall into the academic risk zone.
+                        </td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    const textColor = isDark ? '#94a3b8' : '#64748b';
+    const gridColor = isDark ? 'rgba(148, 163, 184, 0.1)' : 'rgba(0, 0, 0, 0.05)';
+
+    // Class Performance Bar Chart
+    const perfCtx = document.getElementById('classPerfChart').getContext('2d');
+    new Chart(perfCtx, {
+        type: 'bar',
+        data: {
+            labels: {{ chart_data.perf_labels | tojson }},
+            datasets: [{
+                label: 'Class Average (%)',
+                data: {{ chart_data.perf_values | tojson }},
+                backgroundColor: [
+                    'rgba(79, 70, 229, 0.75)',
+                    'rgba(16, 185, 129, 0.75)',
+                    'rgba(245, 158, 11, 0.75)',
+                    'rgba(59, 130, 246, 0.75)',
+                    'rgba(139, 92, 246, 0.75)',
+                    'rgba(236, 72, 153, 0.75)'
+                ],
+                borderRadius: 8
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: { beginAtZero: true, max: 100, grid: { color: gridColor }, ticks: { color: textColor } },
+                x: { grid: { display: false }, ticks: { color: textColor } }
+            },
+            plugins: { legend: { display: false } }
+        }
+    });
+
+    // Risk Donut Chart
+    const donutCtx = document.getElementById('riskDonutChart').getContext('2d');
+    new Chart(donutCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Excellent', 'Average', 'At Risk'],
+            datasets: [{
+                data: [{{ stats.excellent_count }}, {{ stats.average_count }}, {{ stats.at_risk_count }}],
+                backgroundColor: ['#10b981', '#f59e0b', '#ef4444'],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'bottom', labels: { color: textColor, padding: 16 } }
+            },
+            cutout: '70%'
+        }
+    });
+</script>
+{% endblock %}

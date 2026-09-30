@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sign Up - Student Performance Predictor</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+    <script src="{{ url_for('static', filename='theme.js') }}"></script>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="/">🎓 EduPredict AI</a>
+            <div class="d-flex align-items-center gap-2">
+                <a class="btn btn-outline-light btn-sm" href="/login">Log In</a>
+                <a class="btn btn-light btn-sm fw-semibold" href="/signup">Sign Up</a>
+                <button type="button" class="btn btn-outline-light btn-sm theme-toggle-btn ms-1" onclick="toggleTheme()" title="Toggle Light/Dark Theme">
+                    🌙 Dark
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="page-shell">
+        <div class="row justify-content-center">
+            <div class="col-md-6 col-lg-5">
+                <div class="form-card auth-card">
+                    <div class="text-center mb-4">
+                        <div class="auth-icon mb-2">🎓</div>
+                        <h2 class="fw-bold">Create Account</h2>
+                        <p class="text-muted">Register to save predictions and download student reports</p>
+                    </div>
+
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                        {% if messages %}
+                            {% for category, message in messages %}
+                            <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+
+                    <form action="/signup{% if request.args.get('next') %}?next={{ request.args.get('next') }}{% endif %}" method="POST">
+                        <div class="mb-3">
+                            <label for="username" class="form-label">Username</label>
+                            <input type="text" id="username" name="username" class="form-control" placeholder="Choose a username" value="{{ form_data.username if form_data else '' }}" required autofocus />
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="email" class="form-label">Email Address</label>
+                            <input type="email" id="email" name="email" class="form-control" placeholder="name@example.com" value="{{ form_data.email if form_data else '' }}" required />
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="role" class="form-label">Role</label>
+                            <select id="role" name="role" class="form-select" required>
+                                <option value="student" {% if not form_data or form_data.role == 'student' %}selected{% endif %}>
+                                    👨‍🎓 Student (User - View Only)
+                                </option>
+                                <option value="teacher" {% if form_data and form_data.role == 'teacher' %}selected{% endif %}>
+                                    👩‍🏫 Teacher (Admin - Full Access & PDF Download)
+                                </option>
+                            </select>
+                            <div class="form-text small">Teachers have admin authority to download official PDF evaluation reports.</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="password" class="form-label">Password</label>
+                            <input type="password" id="password" name="password" class="form-control" placeholder="At least 6 characters" minlength="6" required />
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="confirm_password" class="form-label">Confirm Password</label>
+                            <input type="password" id="confirm_password" name="confirm_password" class="form-control" placeholder="Re-enter password" minlength="6" required />
+                        </div>
+
+                        <button type="submit" class="predict-btn w-100 mt-2">Sign Up</button>
+                    </form>
+
+                    <div class="text-center mt-4">
+                        <p class="text-muted mb-0">Already registered? <a href="/login{% if request.args.get('next') %}?next={{ request.args.get('next') }}{% endif %}" class="fw-semibold text-primary">Log in here</a></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

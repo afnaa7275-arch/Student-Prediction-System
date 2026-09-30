@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}Performance Insights - Student Portal{% endblock %}
+{% block page_title %}Academic Performance Insights{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+    <div>
+        <h2 class="fw-bold mb-1">Rule-Based Academic Insights</h2>
+        <p class="text-muted mb-0">Transparent analytical observations derived directly from your documented academic metrics.</p>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <!-- Active Insights List -->
+    <div class="col-lg-7">
+        <div class="chart-card h-100">
+            <h5 class="fw-bold mb-3">Key Academic Observations</h5>
+            <div class="d-flex flex-column gap-3">
+                {% for ins in insights %}
+                <div class="p-3 rounded-4 border {% if ins.category == 'positive' %}border-success-subtle bg-success-subtle-50{% elif ins.category == 'warning' %}border-warning-subtle bg-warning-subtle-50{% else %}border-info-subtle bg-info-subtle-50{% endif %}">
+                    <div class="d-flex align-items-start gap-3">
+                        <div class="fs-3">
+                            {% if ins.category == 'positive' %}✅{% elif ins.category == 'warning' %}⚠️{% else %}💡{% endif %}
+                        </div>
+                        <div>
+                            <h6 class="fw-bold mb-1 {% if ins.category == 'positive' %}text-success{% elif ins.category == 'warning' %}text-warning{% else %}text-info{% endif %}">
+                                {{ ins.headline }}
+                            </h6>
+                            <p class="mb-0 text-muted small">{{ ins.detail }}</p>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Concrete Action Suggestions -->
+    <div class="col-lg-5">
+        <div class="chart-card h-100">
+            <h5 class="fw-bold mb-3">Actionable Improvement Suggestions</h5>
+            <p class="text-muted small">Targeted steps based on your current academic indicators:</p>
+
+            <div class="list-group list-group-flush">
+                {% for rec in recommendations %}
+                <div class="list-group-item bg-transparent px-0 py-3 d-flex align-items-start gap-2">
+                    <span class="badge bg-primary rounded-circle p-1">📌</span>
+                    <div>
+                        <div class="fw-bold small">{{ rec.action }}</div>
+                        <div class="text-muted small">{{ rec.reason }}</div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <div class="mt-4 pt-3 border-top">
+                <a href="/student/goals" class="btn btn-primary w-100 fw-bold">
+                    🎯 Set Academic Targets in My Goals →
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

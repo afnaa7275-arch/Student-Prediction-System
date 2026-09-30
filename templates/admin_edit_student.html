@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}Edit Student - Teacher Portal{% endblock %}
+{% block page_title %}Edit Student Details{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="form-card">
+            <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
+                <div>
+                    <h3 class="fw-bold mb-1">Edit Student: {{ student.name }}</h3>
+                    <p class="text-muted mb-0">Update student information and academic evaluation marks.</p>
+                </div>
+                <a href="/admin/students" class="btn btn-outline-secondary btn-sm">← Back to Students</a>
+            </div>
+
+            <form action="/admin/students/edit/{{ student.id }}" method="POST">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label" for="student_id">Student ID</label>
+                        <input type="text" id="student_id" name="student_id" class="form-control" value="{{ student.student_id }}" readonly />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" for="name">Full Name <span class="text-danger">*</span></label>
+                        <input type="text" id="name" name="name" class="form-control" value="{{ student.name }}" required />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" for="department">Department / Program <span class="text-danger">*</span></label>
+                        <input type="text" id="department" name="department" class="form-control" value="{{ student.department }}" required />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" for="semester">Semester / Class</label>
+                        <input type="text" id="semester" name="semester" class="form-control" value="{{ student.semester }}" required />
+                    </div>
+
+                    <div class="col-12 mt-4">
+                        <h5 class="fw-bold text-primary mb-2">Academic Performance Data</h5>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label" for="attendance">Attendance (%) <span class="text-danger">*</span></label>
+                        <input type="number" id="attendance" name="attendance" class="form-control" min="0" max="100" step="0.1" value="{{ student.attendance }}" required />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" for="internal_marks">Internal Marks (%) <span class="text-danger">*</span></label>
+                        <input type="number" id="internal_marks" name="internal_marks" class="form-control" min="0" max="100" step="0.1" value="{{ student.internal_marks }}" required />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" for="assignment_score">Assignment Score (%) <span class="text-danger">*</span></label>
+                        <input type="number" id="assignment_score" name="assignment_score" class="form-control" min="0" max="100" step="0.1" value="{{ student.assignment_score }}" required />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" for="study_hours">Daily Study Hours <span class="text-danger">*</span></label>
+                        <input type="number" id="study_hours" name="study_hours" class="form-control" min="0" max="24" step="0.1" value="{{ student.study_hours }}" required />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" for="previous_sem_marks">Previous Semester Marks (%) <span class="text-danger">*</span></label>
+                        <input type="number" id="previous_sem_marks" name="previous_sem_marks" class="form-control" min="0" max="100" step="0.1" value="{{ student.previous_sem_marks }}" required />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" for="participation">Class Participation Score (%) <span class="text-danger">*</span></label>
+                        <input type="number" id="participation" name="participation" class="form-control" min="0" max="100" step="0.1" value="{{ student.participation }}" required />
+                    </div>
+
+                    <div class="col-12 mt-4 d-flex justify-content-end gap-2">
+                        <a href="/admin/students" class="btn btn-outline-secondary px-4">Cancel</a>
+                        <button type="submit" class="btn btn-primary px-5 fw-bold shadow-sm">Save Changes</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

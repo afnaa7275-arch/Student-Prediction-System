@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Student Performance Dashboard</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+    <script src="{{ url_for('static', filename='theme.js') }}"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+    <style>
+        /* ── Slicer / Filter Bar ── */
+        .slicer-bar {
+            background: var(--card);
+            border-radius: 16px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+            padding: 20px 24px;
+            margin-bottom: 28px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            align-items: flex-end;
+            transition: background 0.25s ease, border-color 0.25s ease;
+        }
+        .slicer-bar .slicer-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            flex: 1;
+            min-width: 160px;
+        }
+        .slicer-bar .slicer-group label {
+            font-size: 0.72rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--muted);
+        }
+        .slicer-bar .slicer-group input,
+        .slicer-bar .slicer-group select {
+            border-radius: 10px;
+            border: 1px solid var(--input-border);
+            padding: 8px 12px;
+            font-size: 0.88rem;
+            background-color: var(--input-bg);
+            color: var(--input-text);
+            transition: border-color 0.2s ease;
+        }
+        .slicer-bar .slicer-group input:focus,
+        .slicer-bar .slicer-group select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 0.15rem rgba(79, 70, 229, 0.18);
+        }
+        .slicer-bar .btn-reset {
+            background: linear-gradient(90deg, var(--danger), #dc2626);
+            border: none;
+            color: #fff;
+            border-radius: 10px;
+            padding: 8px 18px;
+            font-weight: 700;
+            font-size: 0.85rem;
+            cursor: pointer;
+            align-self: flex-end;
+            transition: filter 0.2s;
+        }
+        .slicer-bar .btn-reset:hover { filter: brightness(1.1); }
+
+        /* ── Chart containers ── */
+        .chart-wrapper {
+            position: relative;
+            width: 100%;
+            max-height: 340px;
+        }
+        .chart-card canvas {
+            width: 100% !important;
+            max-height: 320px;
+        }
+        .chart-card h4 {
+            margin-bottom: 14px;
+            font-weight: 700;
+            font-size: 1.05rem;
+        }
+
+        /* ── Animated stat cards ── */
+        .stat-card .value {
+            transition: transform 0.25s ease;
+        }
+        .stat-card:hover .value {
+            transform: scale(1.08);
+        }
+
+        /* ── Active filter pills ── */
+        .active-filters {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+        .filter-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(79, 70, 229, 0.1);
+            color: var(--primary);
+            padding: 4px 12px;
+            border-radius: 999px;
+            font-size: 0.78rem;
+            font-weight: 600;
+        }
+        .filter-pill .remove-filter {
+            cursor: pointer;
+            font-weight: 800;
+            opacity: 0.7;
+        }
+        .filter-pill .remove-filter:hover { opacity: 1; }
+
+        .no-data-msg {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--muted);
+            font-size: 1.1rem;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg">
+        <div class="container">
+            <a class="navbar-brand" href="/">Student Performance Predictor</a>
+            <div class="d-flex align-items-center gap-2">
+                <a class="btn btn-outline-light btn-sm" href="/">New Prediction</a>
+                {% if current_user %}
+                    <span class="text-white small ms-1">
+                        {{ current_user.username }}
+                        <span class="badge {% if current_user.is_teacher %}bg-warning text-dark{% else %}bg-info text-dark{% endif %} ms-1">
+                            {% if current_user.is_teacher %}Teacher (Admin){% else %}Student{% endif %}
+                        </span>
+                    </span>
+                    <a class="btn btn-light btn-sm ms-2" href="/logout">Logout</a>
+                {% else %}
+                    <a class="btn btn-outline-light btn-sm" href="/login">Login</a>
+                    <a class="btn btn-light btn-sm" href="/signup">Sign Up</a>
+                {% endif %}
+                <button type="button" class="btn btn-outline-light btn-sm theme-toggle-btn ms-1" onclick="toggleTheme()" title="Toggle Light/Dark Theme">
+                    🌙 Dark
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="page-shell">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <h1 class="mb-4">Student Performance Dashboard</h1>
+
+        <!-- ═══ SLICER / FILTER BAR ═══ -->
+        <div class="slicer-bar" id="slicerBar">
+            <div class="slicer-group">
+                <label for="filterCategory">Prediction</label>
+                <select id="filterCategory">
+                    <option value="all">All Categories</option>
+                    <option value="Excellent">Excellent</option>
+                    <option value="Average">Average</option>
+                    <option value="At Risk">At Risk</option>
+                </select>
+            </div>
+            <div class="slicer-group">
+                <label for="filterStudent">Student Name</label>
+                <input type="text" id="filterStudent" placeholder="Search student..." />
+            </div>
+            <div class="slicer-group">
+                <label for="filterDateFrom">Date From</label>
+                <input type="date" id="filterDateFrom" />
+            </div>
+            <div class="slicer-group">
+                <label for="filterDateTo">Date To</label>
+                <input type="date" id="filterDateTo" />
+            </div>
+            <button class="btn-reset" id="resetFilters" title="Clear all filters">✕ Reset</button>
+        </div>
+
+        <!-- Active filter pills -->
+        <div class="active-filters" id="activeFilters"></div>
+
+        <!-- ═══ STAT CARDS ═══ -->
+        <div class="metrics-grid" id="metricsGrid">
+            <div class="stat-card">
+                <div class="label">Total Students</div>
+                <div class="value" id="statTotal">{{ stats.total }}</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">Excellent</div>
+                <div class="value" id="statExcellent" style="color: #16a34a;">{{ stats.excellent }}</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">Average</div>
+                <div class="value" id="statAverage" style="color: #f59e0b;">{{ stats.average }}</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">At Risk</div>
+                <div class="value" id="statAtRisk" style="color: #ef4444;">{{ stats.at_risk }}</div>
+            </div>
+        </div>
+
+        <div class="mb-4">
+            <span class="risk-pill" id="riskPill">Risk Percentage: {{ stats.risk_percentage }}%</span>
+        </div>
+
+        <!-- ═══ CHARTS ═══ -->
+        <div class="row g-4">
+            <div class="col-lg-6">
+                <div class="chart-card">
+                    <h4>📊 Category Distribution</h4>
+                    <div class="chart-wrapper">
+                        <canvas id="chartCategoryDist"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <div class="chart-card">
+                    <h4>📈 Attendance vs Performance</h4>
+                    <div class="chart-wrapper">
+                        <canvas id="chartAttendancePerf"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <div class="chart-card">
+                    <h4>📉 Average Metrics by Category</h4>
+                    <div class="chart-wrapper">
+                        <canvas id="chartMetricsByCategory"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <div class="chart-card">
+                    <h4>🕐 Predictions Over Time</h4>
+                    <div class="chart-wrapper">
+                        <canvas id="chartTimeline"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══ PREDICTION HISTORY TABLE ═══ -->
+        <div class="chart-card mt-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h4 class="mb-0">Prediction History</h4>
+                <span class="text-muted small" id="tableCount"></span>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-striped table-hover align-middle">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Student</th>
+                            <th>Attendance</th>
+                            <th>Internal</th>
+                            <th>Assignment</th>
+                            <th>Study Hours</th>
+                            <th>Participation</th>
+                            <th>Prediction</th>
+                            <th>Date</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="historyBody">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+    (function() {
+        // ── Data from backend ──
+        const ALL_RECORDS = {{ records_json | safe }};
+        const IS_TEACHER = {{ 'true' if current_user and current_user.is_teacher else 'false' }};
+
+        // ── Filter state ──
+        let filters = { category: 'all', student: '', dateFrom: '', dateTo: '' };
+
+        // ── DOM refs ──
+        const elCategory   = document.getElementById('filterCategory');
+        const elStudent    = document.getElementById('filterStudent');
+        const elDateFrom   = document.getElementById('filterDateFrom');
+        const elDateTo     = document.getElementById('filterDateTo');
+        const elReset      = document.getElementById('resetFilters');
+        const elActivePills= document.getElementById('activeFilters');
+
+        // ── Chart instances ──
+        let chartDist, chartAttPerf, chartMetrics, chartTimeline;
+
+        // ── Color palette ──
+        const COLORS = {
+            'Excellent': { bg: 'rgba(34,197,94,0.75)', border: '#16a34a', light: 'rgba(34,197,94,0.15)' },
+            'Average':   { bg: 'rgba(245,158,11,0.75)', border: '#d97706', light: 'rgba(245,158,11,0.15)' },
+            'At Risk':   { bg: 'rgba(239,68,68,0.75)', border: '#dc2626', light: 'rgba(239,68,68,0.15)' },
+        };
+
+        // ── Apply filters ──
+        function getFiltered() {
+            return ALL_RECORDS.filter(r => {
+                if (filters.category !== 'all' && r.prediction !== filters.category) return false;
+                if (filters.student && !r.student_name.toLowerCase().includes(filters.student.toLowerCase())) return false;
+                if (filters.dateFrom) {
+                    const d = r.created_at.split(' ')[0];
+                    if (d < filters.dateFrom) return false;
+                }
+                if (filters.dateTo) {
+                    const d = r.created_at.split(' ')[0];
+                    if (d > filters.dateTo) return false;
+                }
+                return true;
+            });
+        }
+
+        // ── Update active filter pills ──
+        function renderPills() {
+            let html = '';
+            if (filters.category !== 'all') {
+                html += `<span class="filter-pill">Category: ${filters.category} <span class="remove-filter" data-clear="category">×</span></span>`;
+            }
+            if (filters.student) {
+                html += `<span class="filter-pill">Name: "${filters.student}" <span class="remove-filter" data-clear="student">×</span></span>`;
+            }
+            if (filters.dateFrom) {
+                html += `<span class="filter-pill">From: ${filters.dateFrom} <span class="remove-filter" data-clear="dateFrom">×</span></span>`;
+            }
+            if (filters.dateTo) {
+                html += `<span class="filter-pill">To: ${filters.dateTo} <span class="remove-filter" data-clear="dateTo">×</span></span>`;
+            }
+            elActivePills.innerHTML = html;
+
+            // Bind remove buttons
+            elActivePills.querySelectorAll('.remove-filter').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const key = btn.dataset.clear;
+                    if (key === 'category') { filters.category = 'all'; elCategory.value = 'all'; }
+                    if (key === 'student') { filters.student = ''; elStudent.value = ''; }
+                    if (key === 'dateFrom') { filters.dateFrom = ''; elDateFrom.value = ''; }
+                    if (key === 'dateTo') { filters.dateTo = ''; elDateTo.value = ''; }
+                    refresh();
+                });
+            });
+        }
+
+        // ── Update stat cards ──
+        function updateStats(data) {
+            const total = data.length;
+            const excellent = data.filter(r => r.prediction === 'Excellent').length;
+            const average = data.filter(r => r.prediction === 'Average').length;
+            const atRisk = data.filter(r => r.prediction === 'At Risk').length;
+            const riskPct = total ? Math.round((atRisk / total) * 10000) / 100 : 0;
+
+            document.getElementById('statTotal').textContent = total;
+            document.getElementById('statExcellent').textContent = excellent;
+            document.getElementById('statAverage').textContent = average;
+            document.getElementById('statAtRisk').textContent = atRisk;
+            document.getElementById('riskPill').textContent = `Risk Percentage: ${riskPct}%`;
+        }
+
+        // ── Chart: Category Distribution (Doughnut) ──
+        function renderCategoryDist(data) {
+            const counts = { 'Excellent': 0, 'Average': 0, 'At Risk': 0 };
+            data.forEach(r => { if (counts.hasOwnProperty(r.prediction)) counts[r.prediction]++; });
+
+            const labels = Object.keys(counts);
+            const values = Object.values(counts);
+            const bgColors = labels.map(l => COLORS[l].bg);
+            const borderColors = labels.map(l => COLORS[l].border);
+
+            if (chartDist) chartDist.destroy();
+            chartDist = new Chart(document.getElementById('chartCategoryDist'), {
+                type: 'doughnut',
+                data: {
+                    labels,
+                    datasets: [{ data: values, backgroundColor: bgColors, borderColor: borderColors, borderWidth: 2 }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { padding: 16, font: { weight: '600' } } }
+                    }
+                }
+            });
+        }
+
+        // ── Chart: Attendance vs Performance (Scatter) ──
+        function renderAttendancePerf(data) {
+            const datasets = Object.keys(COLORS).map(cat => ({
+                label: cat,
+                data: data.filter(r => r.prediction === cat).map(r => ({
+                    x: r.attendance,
+                    y: (r.internal_marks + r.assignment_score + r.previous_sem_marks) / 3
+                })),
+                backgroundColor: COLORS[cat].bg,
+                borderColor: COLORS[cat].border,
+                pointRadius: 5,
+                pointHoverRadius: 7,
+            }));
+
+            if (chartAttPerf) chartAttPerf.destroy();
+            chartAttPerf = new Chart(document.getElementById('chartAttendancePerf'), {
+                type: 'scatter',
+                data: { datasets },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: { title: { display: true, text: 'Attendance %', font: { weight: '600' } }, min: 0, max: 100 },
+                        y: { title: { display: true, text: 'Avg Academic Score', font: { weight: '600' } }, min: 0, max: 100 }
+                    },
+                    plugins: { legend: { position: 'bottom' } }
+                }
+            });
+        }
+
+        // ── Chart: Average Metrics by Category (Bar) ──
+        function renderMetricsByCategory(data) {
+            const categories = ['Excellent', 'Average', 'At Risk'];
+            const metrics = ['attendance', 'internal_marks', 'assignment_score', 'study_hours', 'participation'];
+            const metricLabels = ['Attendance', 'Internal Marks', 'Assignment', 'Study Hours', 'Participation'];
+            const metricColors = ['#6366f1', '#8b5cf6', '#06b6d4', '#f59e0b', '#10b981'];
+
+            const datasets = metrics.map((m, i) => ({
+                label: metricLabels[i],
+                data: categories.map(cat => {
+                    const items = data.filter(r => r.prediction === cat);
+                    if (items.length === 0) return 0;
+                    const sum = items.reduce((s, r) => s + (r[m] || 0), 0);
+                    return Math.round((sum / items.length) * 100) / 100;
+                }),
+                backgroundColor: metricColors[i],
+                borderRadius: 6,
+            }));
+
+            if (chartMetrics) chartMetrics.destroy();
+            chartMetrics = new Chart(document.getElementById('chartMetricsByCategory'), {
+                type: 'bar',
+                data: { labels: categories, datasets },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { beginAtZero: true, title: { display: true, text: 'Average Value', font: { weight: '600' } } }
+                    },
+                    plugins: { legend: { position: 'bottom' } }
+                }
+            });
+        }
+
+        // ── Chart: Predictions Over Time (Line) ──
+        function renderTimeline(data) {
+            // Group by date
+            const byDate = {};
+            data.forEach(r => {
+                const date = r.created_at.split(' ')[0];
+                if (!byDate[date]) byDate[date] = { 'Excellent': 0, 'Average': 0, 'At Risk': 0 };
+                if (byDate[date].hasOwnProperty(r.prediction)) byDate[date][r.prediction]++;
+            });
+
+            const sortedDates = Object.keys(byDate).sort();
+            const categories = ['Excellent', 'Average', 'At Risk'];
+
+            const datasets = categories.map(cat => ({
+                label: cat,
+                data: sortedDates.map(d => byDate[d][cat]),
+                borderColor: COLORS[cat].border,
+                backgroundColor: COLORS[cat].light,
+                fill: true,
+                tension: 0.4,
+                pointRadius: 4,
+                pointHoverRadius: 6,
+            }));
+
+            if (chartTimeline) chartTimeline.destroy();
+            chartTimeline = new Chart(document.getElementById('chartTimeline'), {
+                type: 'line',
+                data: { labels: sortedDates, datasets },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: { title: { display: true, text: 'Date', font: { weight: '600' } } },
+                        y: { beginAtZero: true, title: { display: true, text: 'Count', font: { weight: '600' } },
+                             ticks: { stepSize: 1 } }
+                    },
+                    plugins: { legend: { position: 'bottom' } }
+                }
+            });
+        }
+
+        // ── Render table ──
+        function renderTable(data) {
+            const tbody = document.getElementById('historyBody');
+            document.getElementById('tableCount').textContent = `Showing ${data.length} of ${ALL_RECORDS.length} records`;
+
+            if (data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="10" class="text-center py-4 text-muted">No records match the current filters.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = data.map(row => {
+                const badgeClass = row.prediction === 'Excellent' ? 'excellent' : row.prediction === 'Average' ? 'average' : 'at-risk';
+                const actionBtn = IS_TEACHER
+                    ? `<a href="/report/${row.id}" class="btn btn-sm btn-primary py-1 px-2 fw-semibold" title="Download Official PDF Report">⬇ PDF</a>`
+                    : `<a href="/report/${row.id}" class="btn btn-sm btn-outline-secondary py-1 px-2" title="View Evaluation">👁 View</a>`;
+
+                return `<tr>
+                    <td>#${row.id}</td>
+                    <td><strong>${row.student_name}</strong></td>
+                    <td>${row.attendance}%</td>
+                    <td>${row.internal_marks}%</td>
+                    <td>${row.assignment_score}%</td>
+                    <td>${row.study_hours}h</td>
+                    <td>${row.participation}%</td>
+                    <td><span class="badge ${badgeClass}">${row.prediction}</span></td>
+                    <td class="small text-muted">${row.created_at}</td>
+                    <td>${actionBtn}</td>
+                </tr>`;
+            }).join('');
+        }
+
+        // ── Master refresh ──
+        function refresh() {
+            const data = getFiltered();
+            renderPills();
+            updateStats(data);
+            renderCategoryDist(data);
+            renderAttendancePerf(data);
+            renderMetricsByCategory(data);
+            renderTimeline(data);
+            renderTable(data);
+        }
+
+        // ── Event listeners ──
+        elCategory.addEventListener('change', () => { filters.category = elCategory.value; refresh(); });
+        elStudent.addEventListener('input', () => { filters.student = elStudent.value; refresh(); });
+        elDateFrom.addEventListener('change', () => { filters.dateFrom = elDateFrom.value; refresh(); });
+        elDateTo.addEventListener('change', () => { filters.dateTo = elDateTo.value; refresh(); });
+        elReset.addEventListener('click', () => {
+            filters = { category: 'all', student: '', dateFrom: '', dateTo: '' };
+            elCategory.value = 'all';
+            elStudent.value = '';
+            elDateFrom.value = '';
+            elDateTo.value = '';
+            refresh();
+        });
+
+        // ── Initial render ──
+        refresh();
+    })();
+    </script>
+</body>
+</html>

@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+{% block title %}Student Performance Analysis - Teacher Portal{% endblock %}
+{% block page_title %}Student Performance Analysis{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+    <div>
+        <h2 class="fw-bold mb-1">Student Performance & Comparative Analytics</h2>
+        <p class="text-muted mb-0">Analyze individual student strengths, compare two students, or assess class-level distribution.</p>
+    </div>
+</div>
+
+<!-- Comparison Selector Card -->
+<div class="filter-card mb-4">
+    <h5 class="fw-bold mb-3">Compare Two Students Side-by-Side</h5>
+    <form method="GET" action="/admin/performance" class="row g-3 align-items-end">
+        <div class="col-md-5">
+            <label class="form-label small fw-bold text-muted">SELECT STUDENT A</label>
+            <select name="student_a" class="form-select">
+                {% for s in all_students %}
+                <option value="{{ s.student_id }}" {% if student_a and student_a.student_id == s.student_id %}selected{% endif %}>
+                    {{ s.name }} ({{ s.student_id }} - {{ s.overall_score }}%)
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-5">
+            <label class="form-label small fw-bold text-muted">SELECT STUDENT B</label>
+            <select name="student_b" class="form-select">
+                {% for s in all_students %}
+                <option value="{{ s.student_id }}" {% if student_b and student_b.student_id == s.student_id %}selected{% endif %}>
+                    {{ s.name }} ({{ s.student_id }} - {{ s.overall_score }}%)
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-2">
+            <button type="submit" class="btn btn-primary w-100 fw-bold">Compare</button>
+        </div>
+    </form>
+</div>
+
+<!-- Comparison Visuals -->
+{% if student_a and student_b %}
+<div class="row g-4 mb-4">
+    <div class="col-lg-6">
+        <div class="chart-card h-100">
+            <h5 class="fw-bold mb-3">Multidimensional Radar Comparison</h5>
+            <div class="chart-wrapper">
+                <canvas id="radarCompareChart"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="chart-card h-100">
+            <h5 class="fw-bold mb-3">Key Metric Side-by-Side Comparison</h5>
+            <div class="table-responsive">
+                <table class="table table-bordered align-middle">
+                    <thead>
+                        <tr class="table-light">
+                            <th>Academic Metric</th>
+                            <th class="text-primary">{{ student_a.name }}</th>
+                            <th class="text-success">{{ student_b.name }}</th>
+                            <th>Class Average</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Attendance</td>
+                            <td class="fw-bold">{{ student_a.attendance }}%</td>
+                            <td class="fw-bold">{{ student_b.attendance }}%</td>
+                            <td class="text-muted">{{ class_avg.attendance }}%</td>
+                        </tr>
+                        <tr>
+                            <td>Internal Marks</td>
+                            <td class="fw-bold">{{ student_a.internal_marks }}%</td>
+                            <td class="fw-bold">{{ student_b.internal_marks }}%</td>
+                            <td class="text-muted">{{ class_avg.internal_marks }}%</td>
+                        </tr>
+                        <tr>
+                            <td>Assignment Score</td>
+                            <td class="fw-bold">{{ student_a.assignment_score }}%</td>
+                            <td class="fw-bold">{{ student_b.assignment_score }}%</td>
+                            <td class="text-muted">{{ class_avg.assignment_score }}%</td>
+                        </tr>
+                        <tr>
+                            <td>Daily Study Hours</td>
+                            <td class="fw-bold">{{ student_a.study_hours }}h</td>
+                            <td class="fw-bold">{{ student_b.study_hours }}h</td>
+                            <td class="text-muted">{{ class_avg.study_hours }}h</td>
+                        </tr>
+                        <tr>
+                            <td>Previous Semester</td>
+                            <td class="fw-bold">{{ student_a.previous_sem_marks }}%</td>
+                            <td class="fw-bold">{{ student_b.previous_sem_marks }}%</td>
+                            <td class="text-muted">{{ class_avg.previous_sem_marks }}%</td>
+                        </tr>
+                        <tr>
+                            <td>Class Participation</td>
+                            <td class="fw-bold">{{ student_a.participation }}%</td>
+                            <td class="fw-bold">{{ student_b.participation }}%</td>
+                            <td class="text-muted">{{ class_avg.participation }}%</td>
+                        </tr>
+                        <tr class="table-light">
+                            <td class="fw-bold">Overall Score</td>
+                            <td class="fw-bold text-primary">{{ student_a.overall_score }}%</td>
+                            <td class="fw-bold text-success">{{ student_b.overall_score }}%</td>
+                            <td class="fw-bold">{{ class_avg.overall_score }}%</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+{% if student_a and student_b %}
+<script>
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    const textColor = isDark ? '#94a3b8' : '#64748b';
+
+    const ctx = document.getElementById('radarCompareChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'radar',
+        data: {
+            labels: ['Attendance', 'Internal Marks', 'Assignments', 'Study Hours (x10)', 'Prev Sem', 'Participation'],
+            datasets: [
+                {
+                    label: {{ student_a.name | tojson }},
+                    data: [
+                        {{ student_a.attendance }},
+                        {{ student_a.internal_marks }},
+                        {{ student_a.assignment_score }},
+                        {{ student_a.study_hours * 10 }},
+                        {{ student_a.previous_sem_marks }},
+                        {{ student_a.participation }}
+                    ],
+                    backgroundColor: 'rgba(79, 70, 229, 0.2)',
+                    borderColor: '#4f46e5',
+                    pointBackgroundColor: '#4f46e5'
+                },
+                {
+                    label: {{ student_b.name | tojson }},
+                    data: [
+                        {{ student_b.attendance }},
+                        {{ student_b.internal_marks }},
+                        {{ student_b.assignment_score }},
+                        {{ student_b.study_hours * 10 }},
+                        {{ student_b.previous_sem_marks }},
+                        {{ student_b.participation }}
+                    ],
+                    backgroundColor: 'rgba(16, 185, 129, 0.2)',
+                    borderColor: '#10b981',
+                    pointBackgroundColor: '#10b981'
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                r: {
+                    angleLines: { color: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' },
+                    grid: { color: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' },
+                    pointLabels: { color: textColor, font: { size: 12 } },
+                    suggestedMin: 0,
+                    suggestedMax: 100
+                }
+            },
+            plugins: {
+                legend: { position: 'bottom', labels: { color: textColor } }
+            }
+        }
+    });
+</script>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}My Profile - Student Performance System{% endblock %}
+{% block page_title %}Profile & Account Settings{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="form-card">
+            <div class="d-flex align-items-center gap-4 mb-4 pb-3 border-bottom flex-wrap">
+                <div class="profile-avatar-circle">
+                    {% if current_user.is_teacher %}👩‍🏫{% else %}👨‍🎓{% endif %}
+                </div>
+                <div>
+                    <h3 class="fw-bold mb-1">{{ current_user.username }}</h3>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="badge {% if current_user.is_teacher %}badge-teacher{% else %}badge-student{% endif %}">
+                            {{ 'Teacher / Administrator' if current_user.is_teacher else 'Enrolled Student' }}
+                        </span>
+                        <span class="text-muted small">Account ID: #{{ current_user.id }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label text-muted small fw-bold">USERNAME</label>
+                    <div class="form-control bg-light">{{ current_user.username }}</div>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label text-muted small fw-bold">REGISTERED EMAIL</label>
+                    <div class="form-control bg-light">{{ current_user.email }}</div>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label text-muted small fw-bold">ACCOUNT ROLE</label>
+                    <div class="form-control bg-light fw-bold text-primary">
+                        {{ 'Teacher (Full System Access)' if current_user.is_teacher else 'Student (Personal Performance Only)' }}
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label text-muted small fw-bold">ACCESS PRIVILEGES</label>
+                    <div class="form-control bg-light">
+                        {% if current_user.is_teacher %}
+                            Full CRUD, AI Prediction, Analytics, Reports
+                        {% else %}
+                            Self-View Dashboard, Scoreboard, Insights, Goals
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-4 pt-3 border-top d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <span class="text-muted small">System Security: Role-Based Authorization Active</span>
+                <a href="/logout" class="btn btn-outline-danger fw-semibold">Sign Out</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

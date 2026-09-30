@@ -1,0 +1,233 @@
+{% extends "base.html" %}
+{% block title %}AI Student Performance Prediction - Teacher Portal{% endblock %}
+{% block page_title %}AI Performance Prediction System{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <div class="hero mb-4">
+            <span class="badge bg-primary-subtle text-primary px-3 py-2 rounded-pill fw-bold mb-2">Teacher / Admin Exclusive Tool</span>
+            <h1 class="fw-bold">AI Student Performance Predictor</h1>
+            <p class="text-muted">Enter student academic metrics below. Our trained Machine Learning model will classify predicted performance tier (Excellent, Average, or At Risk).</p>
+        </div>
+
+        <!-- Quick Fill Helper Buttons for Demo/Testing -->
+        <div class="card p-3 mb-4 border-0 shadow-sm rounded-4" style="background: var(--card);">
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                <span class="fw-bold small text-muted">⚡ QUICK PRE-FILL PROFILES:</span>
+                <div class="d-flex gap-2 flex-wrap">
+                    <button type="button" class="btn btn-sm btn-outline-success" onclick="fillProfile('excellent')">🌟 High Performer</button>
+                    <button type="button" class="btn btn-sm btn-outline-warning" onclick="fillProfile('average')">📈 Average Student</button>
+                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="fillProfile('at_risk')">⚠️ At Risk Student</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="errorAlert" class="alert alert-danger d-none shadow-sm" role="alert"></div>
+
+        <div class="form-card shadow-sm mb-4">
+            <form id="predictionForm" action="/predict" method="POST">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label for="student_name" class="form-label">Student Full Name <span class="text-danger">*</span></label>
+                        <input type="text" id="student_name" name="student_name" class="form-control" placeholder="e.g. Maya Lin" value="{{ form_data.student_name if form_data else '' }}" required />
+                    </div>
+
+                    <div class="col-md-6">
+                        <label for="attendance" class="form-label">Attendance (%) <span class="text-danger">*</span></label>
+                        <input type="number" id="attendance" name="attendance" class="form-control" min="0" max="100" step="0.1" placeholder="0 - 100" value="{{ form_data.attendance if form_data else '' }}" required />
+                    </div>
+
+                    <div class="col-md-6">
+                        <label for="internal_marks" class="form-label">Internal Assessment Marks (%) <span class="text-danger">*</span></label>
+                        <input type="number" id="internal_marks" name="internal_marks" class="form-control" min="0" max="100" step="0.1" placeholder="0 - 100" value="{{ form_data.internal_marks if form_data else '' }}" required />
+                    </div>
+
+                    <div class="col-md-6">
+                        <label for="assignment_score" class="form-label">Assignment Score (%) <span class="text-danger">*</span></label>
+                        <input type="number" id="assignment_score" name="assignment_score" class="form-control" min="0" max="100" step="0.1" placeholder="0 - 100" value="{{ form_data.assignment_score if form_data else '' }}" required />
+                    </div>
+
+                    <div class="col-md-6">
+                        <label for="study_hours" class="form-label">Daily Dedicated Study Hours <span class="text-danger">*</span></label>
+                        <input type="number" id="study_hours" name="study_hours" class="form-control" min="0" max="24" step="0.1" placeholder="0 - 24" value="{{ form_data.study_hours if form_data else '' }}" required />
+                    </div>
+
+                    <div class="col-md-6">
+                        <label for="previous_sem_marks" class="form-label">Previous Semester Marks (%) <span class="text-danger">*</span></label>
+                        <input type="number" id="previous_sem_marks" name="previous_sem_marks" class="form-control" min="0" max="100" step="0.1" placeholder="0 - 100" value="{{ form_data.previous_sem_marks if form_data else '' }}" required />
+                    </div>
+
+                    <div class="col-md-12">
+                        <label for="participation" class="form-label">Class Participation Score (%) <span class="text-danger">*</span></label>
+                        <input type="number" id="participation" name="participation" class="form-control" min="0" max="100" step="0.1" placeholder="0 - 100" value="{{ form_data.participation if form_data else '' }}" required />
+                    </div>
+
+                    <div class="col-12 mt-4">
+                        <button type="submit" id="predictBtn" class="predict-btn py-3 fw-bold fs-5 shadow">
+                            ⚡ Run ML Performance Prediction
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- Dynamic Prediction Result Box -->
+        <div class="result-box shadow {% if prediction %}visible{% endif %}" id="resultBox" style="{% if prediction %}display: block;{% endif %}">
+            <div class="text-center">
+                <div class="result-title text-muted text-uppercase fw-bold letter-spacing-1">Predicted Performance Tier</div>
+                <div id="predictionValue" class="prediction-value my-2 {% if prediction %}{{ prediction.lower().replace(' ', '-') }}{% endif %}">
+                    {{ prediction if prediction else '-' }}
+                </div>
+                <p id="predictionDesc" class="text-muted mb-4">ML Model has classified the student evaluation.</p>
+
+                <div class="d-flex justify-content-center gap-3 flex-wrap">
+                    <a id="viewReportBtn" href="{{ url_for('report', prediction_id=prediction_id) if prediction_id else '#' }}" class="btn btn-success px-4 py-2 fw-bold shadow-sm">
+                        📄 Download Full Evaluation Report (PDF)
+                    </a>
+                    <a href="/admin/records" class="btn btn-outline-secondary px-4 py-2 fw-semibold">
+                        📋 View Academic Records
+                    </a>
+                    <a href="/admin/dashboard" class="btn btn-outline-primary px-4 py-2 fw-semibold">
+                        📊 Return to Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const form = document.getElementById("predictionForm");
+    const predictBtn = document.getElementById("predictBtn");
+    const errorAlert = document.getElementById("errorAlert");
+    const resultBox = document.getElementById("resultBox");
+    const predictionValue = document.getElementById("predictionValue");
+    const viewReportBtn = document.getElementById("viewReportBtn");
+
+    function fillProfile(type) {
+        if (type === 'excellent') {
+            document.getElementById('student_name').value = 'Emma Watson';
+            document.getElementById('attendance').value = '94';
+            document.getElementById('internal_marks').value = '91';
+            document.getElementById('assignment_score').value = '95';
+            document.getElementById('study_hours').value = '6.5';
+            document.getElementById('previous_sem_marks').value = '90';
+            document.getElementById('participation').value = '92';
+        } else if (type === 'average') {
+            document.getElementById('student_name').value = 'Lucas Vance';
+            document.getElementById('attendance').value = '79';
+            document.getElementById('internal_marks').value = '72';
+            document.getElementById('assignment_score').value = '75';
+            document.getElementById('study_hours').value = '3.5';
+            document.getElementById('previous_sem_marks').value = '70';
+            document.getElementById('participation').value = '68';
+        } else if (type === 'at_risk') {
+            document.getElementById('student_name').value = 'Jordan Miller';
+            document.getElementById('attendance').value = '58';
+            document.getElementById('internal_marks').value = '46';
+            document.getElementById('assignment_score').value = '50';
+            document.getElementById('study_hours').value = '1.2';
+            document.getElementById('previous_sem_marks').value = '48';
+            document.getElementById('participation').value = '40';
+        }
+    }
+
+    function showError(msg) {
+        errorAlert.textContent = msg;
+        errorAlert.classList.remove("d-none");
+        errorAlert.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+
+    function clearError() {
+        errorAlert.textContent = "";
+        errorAlert.classList.add("d-none");
+    }
+
+    form.addEventListener("submit", async function (event) {
+        event.preventDefault();
+        clearError();
+
+        const formData = new FormData(this);
+        const raw = Object.fromEntries(formData.entries());
+
+        const requiredFields = [
+            { name: "student_name", label: "Student Name" },
+            { name: "attendance", label: "Attendance", min: 0, max: 100 },
+            { name: "internal_marks", label: "Internal Marks", min: 0, max: 100 },
+            { name: "assignment_score", label: "Assignment Score", min: 0, max: 100 },
+            { name: "study_hours", label: "Study Hours", min: 0, max: 24 },
+            { name: "previous_sem_marks", label: "Previous Semester Marks", min: 0, max: 100 },
+            { name: "participation", label: "Participation", min: 0, max: 100 }
+        ];
+
+        for (const field of requiredFields) {
+            const val = raw[field.name];
+            if (!val || String(val).trim() === "") {
+                showError(`Please provide a value for ${field.label}.`);
+                return;
+            }
+            if (field.min !== undefined) {
+                const num = Number(val);
+                if (isNaN(num) || num < field.min || num > field.max) {
+                    showError(`${field.label} must be a number between ${field.min} and ${field.max}.`);
+                    return;
+                }
+            }
+        }
+
+        const payload = {
+            student_name: raw.student_name.trim(),
+            attendance: Number(raw.attendance),
+            internal_marks: Number(raw.internal_marks),
+            assignment_score: Number(raw.assignment_score),
+            study_hours: Number(raw.study_hours),
+            previous_sem_marks: Number(raw.previous_sem_marks),
+            participation: Number(raw.participation)
+        };
+
+        predictBtn.disabled = true;
+        predictBtn.textContent = "Processing Prediction with ML Model...";
+
+        try {
+            const response = await fetch("/predict", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Accept": "application/json"
+                },
+                body: JSON.stringify(payload)
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                showError(data.error || `Server error (${response.status})`);
+                return;
+            }
+
+            const pred = data.prediction;
+            predictionValue.textContent = pred;
+            predictionValue.className = "prediction-value " + (
+                pred === "Excellent" ? "excellent" : (pred === "Average" ? "average" : "at-risk")
+            );
+
+            if (data.id) {
+                viewReportBtn.href = `/report/${data.id}`;
+            }
+
+            resultBox.style.display = "block";
+            resultBox.classList.add("visible");
+            resultBox.scrollIntoView({ behavior: "smooth", block: "center" });
+        } catch (err) {
+            console.error("Prediction failed:", err);
+            showError("Prediction failed: " + (err.message || "Please check server status."));
+        } finally {
+            predictBtn.disabled = false;
+            predictBtn.textContent = "⚡ Run ML Performance Prediction";
+        }
+    });
+</script>
+{% endblock %}

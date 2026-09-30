@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Academic Report - {{ report.record.student_name }}</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+    <script src="{{ url_for('static', filename='theme.js') }}"></script>
+    <!-- html2pdf.js CDN for direct PDF download -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+        .report-page {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 30px 15px;
+        }
+
+        .report-paper {
+            background: #ffffff;
+            border-radius: 16px;
+            padding: 40px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+            border: 1px solid #e2e8f0;
+            position: relative;
+        }
+
+        .report-header {
+            border-bottom: 3px solid #4f46e5;
+            padding-bottom: 20px;
+            margin-bottom: 25px;
+        }
+
+        .report-badge-lg {
+            font-size: 1.3rem;
+            padding: 8px 22px;
+            border-radius: 999px;
+            font-weight: 800;
+            display: inline-block;
+            text-transform: uppercase;
+        }
+
+        .report-metric-box {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 16px;
+            text-align: center;
+        }
+
+        .report-metric-box .val {
+            font-size: 1.6rem;
+            font-weight: 800;
+            color: #1e293b;
+        }
+
+        .report-metric-box .lbl {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .action-toolbar {
+            background: #ffffff;
+            border-radius: 14px;
+            padding: 14px 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.06);
+            margin-bottom: 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        @media print {
+            .no-print {
+                display: none !important;
+            }
+            body {
+                background: #ffffff;
+            }
+            .report-paper {
+                box-shadow: none;
+                border: none;
+                padding: 0;
+            }
+            .page-shell, .report-page {
+                padding: 0;
+                margin: 0;
+                max-width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg no-print">
+        <div class="container">
+            <a class="navbar-brand" href="/">Student Performance Predictor</a>
+            <div class="d-flex align-items-center gap-2">
+                <a class="btn btn-outline-light btn-sm" href="/">New Prediction</a>
+                <a class="btn btn-outline-light btn-sm" href="/dashboard">Dashboard</a>
+                {% if current_user %}
+                    <span class="text-white small ms-2">
+                        {{ current_user.username }} 
+                        <span class="badge {% if current_user.is_teacher %}bg-warning text-dark{% else %}bg-info text-dark{% endif %} ms-1">
+                            {% if current_user.is_teacher %}Teacher (Admin){% else %}Student{% endif %}
+                        </span>
+                    </span>
+                    <a class="btn btn-light btn-sm ms-2" href="/logout">Logout</a>
+                {% else %}
+                    <a class="btn btn-light btn-sm" href="/login">Login</a>
+                {% endif %}
+                <button type="button" class="btn btn-outline-light btn-sm theme-toggle-btn ms-1" onclick="toggleTheme()" title="Toggle Light/Dark Theme">
+                    🌙 Dark
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="report-page">
+        <!-- Action Toolbar (hidden on print / PDF) -->
+        <div class="action-toolbar no-print">
+            <div class="d-flex align-items-center gap-2">
+                <a href="/dashboard" class="btn btn-outline-secondary btn-sm">← Back to Dashboard</a>
+                <a href="/" class="btn btn-outline-secondary btn-sm">+ New Prediction</a>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                {% if current_user and current_user.is_teacher %}
+                    <span class="badge bg-success text-white px-2 py-1 small">Admin Access</span>
+                    <button id="downloadPdfBtn" class="btn btn-primary btn-sm px-3 fw-bold" onclick="generatePDF()">
+                        ⬇ Download PDF Report
+                    </button>
+                    <button class="btn btn-outline-dark btn-sm px-3" onclick="window.print()">
+                        🖨 Print Report
+                    </button>
+                {% else %}
+                    <span class="badge bg-secondary p-2 small">
+                        🔒 Student View-Only Mode
+                    </span>
+                    <button class="btn btn-outline-secondary btn-sm px-3" disabled title="PDF download requires a Teacher (Admin) account">
+                        🔒 Download PDF (Teacher Only)
+                    </button>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Printable Document Element -->
+        <div class="report-paper" id="reportContent">
+            <!-- Header Section -->
+            <div class="report-header d-flex justify-content-between align-items-start flex-wrap gap-3">
+                <div>
+                    <h5 class="text-primary fw-bold mb-1">ACADEMIC PERFORMANCE EVALUATION</h5>
+                    <h2 class="fw-bold mb-0 text-dark">Student Performance & Risk Report</h2>
+                    <p class="text-muted small mb-0 mt-1">Official Automated Evaluation • AI-Assisted Academic Analytics</p>
+                </div>
+                <div class="text-end">
+                    <span class="badge bg-light text-dark border px-3 py-2 small fw-semibold">
+                        ID: #PRED-{{ "%04d" % report.record.id }}
+                    </span>
+                    <div class="text-muted small mt-1">{{ report.generated_at }}</div>
+                </div>
+            </div>
+
+            <!-- Student Summary Banner -->
+            <div class="row align-items-center p-3 mb-4 rounded-3" style="background: #f1f5f9;">
+                <div class="col-md-7">
+                    <div class="small text-muted text-uppercase fw-bold">Candidate Name</div>
+                    <h3 class="fw-bold text-dark mb-1">{{ report.record.student_name }}</h3>
+                    <p class="text-muted small mb-0">{{ report.summary_text }}</p>
+                </div>
+                <div class="col-md-5 text-md-end mt-3 mt-md-0">
+                    <div class="small text-muted text-uppercase fw-bold mb-1">Assessed Category</div>
+                    <span class="report-badge-lg {% if report.record.prediction == 'Excellent' %}bg-success text-white{% elif report.record.prediction == 'Average' %}bg-warning text-dark{% else %}bg-danger text-white{% endif %}">
+                        {{ report.record.prediction }}
+                    </span>
+                </div>
+            </div>
+
+            <!-- Specific Alerts Banner if any -->
+            {% if report.alerts %}
+            <div class="alert alert-warning border-warning mb-4" role="alert">
+                <h6 class="fw-bold mb-1">⚠️ Academic Caution Alerts:</h6>
+                <ul class="mb-0 ps-3 small">
+                    {% for alert in report.alerts %}
+                    <li>{{ alert }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+
+            <!-- Core Performance Metrics Grid -->
+            <h5 class="fw-bold text-dark mb-3">Key Academic Metrics</h5>
+            <div class="row g-3 mb-4">
+                <div class="col-6 col-md-3">
+                    <div class="report-metric-box">
+                        <div class="val">{{ report.record.attendance }}%</div>
+                        <div class="lbl">Attendance</div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="report-metric-box">
+                        <div class="val">{{ report.record.internal_marks }}%</div>
+                        <div class="lbl">Internal Marks</div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="report-metric-box">
+                        <div class="val">{{ report.record.assignment_score }}%</div>
+                        <div class="lbl">Assignment Score</div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="report-metric-box">
+                        <div class="val">{{ report.record.study_hours }}h</div>
+                        <div class="lbl">Daily Study</div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="report-metric-box">
+                        <div class="val">{{ report.record.previous_sem_marks }}%</div>
+                        <div class="lbl">Previous Sem</div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="report-metric-box">
+                        <div class="val">{{ report.record.participation }}%</div>
+                        <div class="lbl">Participation</div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="report-metric-box" style="border-color: #818cf8; background: #eef2ff;">
+                        <div class="val text-primary">{{ report.overall_score }}%</div>
+                        <div class="lbl text-primary">Overall Composite</div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="report-metric-box" style="border-color: #818cf8; background: #eef2ff;">
+                        <div class="val text-primary">{{ report.study_performance }}</div>
+                        <div class="lbl text-primary">Study Index</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Actionable Recommendations -->
+            <div class="mb-4 p-3 rounded-3 border" style="background: #fafafa;">
+                <h5 class="fw-bold text-dark mb-2">🎯 AI Advisor Recommendations</h5>
+                <ol class="mb-0 ps-3">
+                    {% for rec in report.recommendations %}
+                    <li class="mb-2 text-secondary">{{ rec }}</li>
+                    {% endfor %}
+                </ol>
+            </div>
+
+            <!-- Official Footer & Sign-off -->
+            <div class="border-top pt-3 mt-4 d-flex justify-content-between align-items-center text-muted small">
+                <div>
+                    <div><strong>System:</strong> AI-Based Student Performance Prediction System</div>
+                    <div><strong>Database Timestamp:</strong> {{ report.record.created_at }}</div>
+                </div>
+                <div class="text-end">
+                    <div class="border-bottom pb-3 mb-1" style="width: 140px; display: inline-block;"></div>
+                    <div>Academic Authority Sign-off</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function generatePDF() {
+            {% if not current_user or not current_user.is_teacher %}
+            alert("Access Restricted: Only Teachers (Admins) are authorized to download student evaluation PDF reports.");
+            return;
+            {% endif %}
+
+            const btn = document.getElementById("downloadPdfBtn");
+            const element = document.getElementById("reportContent");
+            const studentName = "{{ report.record.student_name }}".replace(/[^a-zA-Z0-9_-]/g, "_");
+            const filename = `${studentName}_Performance_Report.pdf`;
+
+            btn.disabled = true;
+            btn.textContent = "Generating PDF...";
+
+            const opt = {
+                margin: [10, 10, 10, 10],
+                filename: filename,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2, useCORS: true, logging: false },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+
+            html2pdf().set(opt).from(element).save().then(() => {
+                btn.disabled = false;
+                btn.textContent = "⬇ Download PDF Report";
+            }).catch(err => {
+                console.error("PDF generation failed:", err);
+                alert("Failed to generate PDF. Using print dialog as fallback.");
+                window.print();
+                btn.disabled = false;
+                btn.textContent = "⬇ Download PDF Report";
+            });
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% block title %}Class Scoreboard - Teacher Portal{% endblock %}
+{% block page_title %}Class Scoreboard & Leaderboard{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+    <div>
+        <h2 class="fw-bold mb-1">Class Academic Scoreboard</h2>
+        <p class="text-muted mb-0">Cohort ranking ordered by composite overall academic score.</p>
+    </div>
+</div>
+
+<!-- Top 3 Podium Highlights -->
+{% if ranked_students|length >= 3 %}
+<div class="row g-4 mb-4 justify-content-center">
+    <!-- Rank 2 -->
+    <div class="col-md-4 col-sm-6 order-2 order-md-1">
+        <div class="stat-card text-center podium-card podium-silver h-100">
+            <div class="podium-badge">🥈 2nd Place</div>
+            <div class="fs-4 fw-bold mt-2">{{ ranked_students[1].name }}</div>
+            <div class="text-muted small"><code>{{ ranked_students[1].student_id }}</code> • {{ ranked_students[1].department }}</div>
+            <div class="podium-score text-primary mt-2">{{ ranked_students[1].overall_score }}%</div>
+            <small class="text-muted">Attendance: {{ ranked_students[1].attendance }}%</small>
+        </div>
+    </div>
+    <!-- Rank 1 -->
+    <div class="col-md-4 col-sm-6 order-1 order-md-2">
+        <div class="stat-card text-center podium-card podium-gold h-100 border-warning shadow">
+            <div class="podium-badge text-warning fs-5">👑 1st Place (Topper)</div>
+            <div class="fs-3 fw-bold mt-2 text-warning">{{ ranked_students[0].name }}</div>
+            <div class="text-muted small"><code>{{ ranked_students[0].student_id }}</code> • {{ ranked_students[0].department }}</div>
+            <div class="podium-score text-warning mt-2 fs-1">{{ ranked_students[0].overall_score }}%</div>
+            <small class="text-muted">Attendance: {{ ranked_students[0].attendance }}%</small>
+        </div>
+    </div>
+    <!-- Rank 3 -->
+    <div class="col-md-4 col-sm-6 order-3 order-md-3">
+        <div class="stat-card text-center podium-card podium-bronze h-100">
+            <div class="podium-badge">🥉 3rd Place</div>
+            <div class="fs-4 fw-bold mt-2">{{ ranked_students[2].name }}</div>
+            <div class="text-muted small"><code>{{ ranked_students[2].student_id }}</code> • {{ ranked_students[2].department }}</div>
+            <div class="podium-score text-primary mt-2">{{ ranked_students[2].overall_score }}%</div>
+            <small class="text-muted">Attendance: {{ ranked_students[2].attendance }}%</small>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Full Ranked Leaderboard Table -->
+<div class="table-card">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead>
+                <tr>
+                    <th style="width: 80px;">Rank</th>
+                    <th>Student Name</th>
+                    <th>Student ID</th>
+                    <th>Department</th>
+                    <th>Overall Score</th>
+                    <th>Attendance</th>
+                    <th>Internals</th>
+                    <th>Assignments</th>
+                    <th>Predicted Tier</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for s in ranked_students %}
+                <tr class="{% if loop.index == 1 %}table-warning-subtle{% endif %}">
+                    <td>
+                        <span class="rank-badge {% if loop.index == 1 %}rank-1{% elif loop.index == 2 %}rank-2{% elif loop.index == 3 %}rank-3{% else %}rank-norm{% endif %}">
+                            #{{ loop.index }}
+                        </span>
+                    </td>
+                    <td class="fw-bold">{{ s.name }}</td>
+                    <td><code>{{ s.student_id }}</code></td>
+                    <td>{{ s.department }}</td>
+                    <td>
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="fw-bold text-primary fs-6">{{ s.overall_score }}%</span>
+                        </div>
+                    </td>
+                    <td>{{ s.attendance }}%</td>
+                    <td>{{ s.internal_marks }}%</td>
+                    <td>{{ s.assignment_score }}%</td>
+                    <td>
+                        <span class="badge {% if s.predicted_performance == 'Excellent' %}badge-excellent{% elif s.predicted_performance == 'Average' %}badge-average{% else %}badge-at-risk{% endif %}">
+                            {{ s.predicted_performance }}
+                        </span>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

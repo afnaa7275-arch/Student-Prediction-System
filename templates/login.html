@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Login - Student Performance Predictor</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+    <script src="{{ url_for('static', filename='theme.js') }}"></script>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="/">🎓 EduPredict AI</a>
+            <div class="d-flex align-items-center gap-2">
+                <a class="btn btn-outline-light btn-sm" href="/login">Log In</a>
+                <a class="btn btn-light btn-sm fw-semibold" href="/signup">Sign Up</a>
+                <button type="button" class="btn btn-outline-light btn-sm theme-toggle-btn ms-1" onclick="toggleTheme()" title="Toggle Light/Dark Theme">
+                    🌙 Dark
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="page-shell">
+        <div class="row justify-content-center">
+            <div class="col-md-6 col-lg-5">
+                <div class="form-card auth-card">
+                    <div class="text-center mb-4">
+                        <div class="auth-icon mb-2">🔐</div>
+                        <h2 class="fw-bold">Sign In</h2>
+                        <p class="text-muted">Access your student prediction dashboard and reports</p>
+                    </div>
+
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                        {% if messages %}
+                            {% for category, message in messages %}
+                            <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+
+                    <form action="/login{% if request.args.get('next') %}?next={{ request.args.get('next') }}{% endif %}" method="POST">
+                        <div class="mb-3">
+                            <label for="login_id" class="form-label">Username or Email</label>
+                            <input type="text" id="login_id" name="login_id" class="form-control" placeholder="Enter username or email" value="{{ login_id or '' }}" required autofocus />
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="password" class="form-label">Password</label>
+                            <input type="password" id="password" name="password" class="form-control" placeholder="Enter password" required />
+                        </div>
+
+                        <button type="submit" class="predict-btn w-100 mt-2">Log In</button>
+                    </form>
+
+                    <div class="mt-4 p-3 bg-light rounded-3 border small">
+                        <div class="fw-bold text-dark mb-1">🔑 Quick Demo Accounts:</div>
+                        <div class="d-flex justify-content-between text-muted mt-1">
+                            <span><strong>Teacher (Admin):</strong></span>
+                            <span><code>teacher_admin</code> / <code>teacher123</code></span>
+                        </div>
+                        <div class="d-flex justify-content-between text-muted mt-1">
+                            <span><strong>Student (User):</strong></span>
+                            <span><code>student_user</code> / <code>student123</code></span>
+                        </div>
+                    </div>
+
+                    <div class="text-center mt-3">
+                        <p class="text-muted mb-0">Don't have an account? <a href="/signup{% if request.args.get('next') %}?next={{ request.args.get('next') }}{% endif %}" class="fw-semibold text-primary">Sign up here</a></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

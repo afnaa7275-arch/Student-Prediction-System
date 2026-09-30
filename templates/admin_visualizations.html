@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+{% block title %}Data Visualizations - Teacher Portal{% endblock %}
+{% block page_title %}Class Data Visualizations & Analytics{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+    <div>
+        <h2 class="fw-bold mb-1">Interactive Academic Visualizations</h2>
+        <p class="text-muted mb-0">Visual data representations across study hours, marks distribution, and cohort trends.</p>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-lg-6">
+        <div class="chart-card h-100">
+            <h5 class="fw-bold mb-3">Attendance vs Overall Performance Scatter</h5>
+            <div class="chart-wrapper">
+                <canvas id="scatterChart"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="chart-card h-100">
+            <h5 class="fw-bold mb-3">Study Hours vs Performance (hrs/day)</h5>
+            <div class="chart-wrapper">
+                <canvas id="studyHoursChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-8">
+        <div class="chart-card h-100">
+            <h5 class="fw-bold mb-3">Academic Component Averages Across Cohort</h5>
+            <div class="chart-wrapper">
+                <canvas id="componentsBarChart"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="chart-card h-100">
+            <h5 class="fw-bold mb-3">Performance Tier Distribution</h5>
+            <div class="chart-wrapper d-flex justify-content-center">
+                <canvas id="tierPieChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    const textColor = isDark ? '#94a3b8' : '#64748b';
+    const gridColor = isDark ? 'rgba(148, 163, 184, 0.1)' : 'rgba(0, 0, 0, 0.05)';
+
+    // Scatter Chart: Attendance vs Overall
+    const scatterCtx = document.getElementById('scatterChart').getContext('2d');
+    new Chart(scatterCtx, {
+        type: 'scatter',
+        data: {
+            datasets: [{
+                label: 'Students',
+                data: {{ scatter_data | tojson }},
+                backgroundColor: 'rgba(79, 70, 229, 0.8)',
+                pointRadius: 6,
+                pointHoverRadius: 8
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: { title: { display: true, text: 'Attendance (%)', color: textColor }, min: 40, max: 100, grid: { color: gridColor }, ticks: { color: textColor } },
+                y: { title: { display: true, text: 'Overall Score (%)', color: textColor }, min: 30, max: 100, grid: { color: gridColor }, ticks: { color: textColor } }
+            },
+            plugins: { legend: { display: false } }
+        }
+    });
+
+    // Study Hours Line/Bar Chart
+    const studyCtx = document.getElementById('studyHoursChart').getContext('2d');
+    new Chart(studyCtx, {
+        type: 'bar',
+        data: {
+            labels: {{ study_chart.labels | tojson }},
+            datasets: [{
+                label: 'Overall Score (%)',
+                data: {{ study_chart.scores | tojson }},
+                backgroundColor: 'rgba(16, 185, 129, 0.75)',
+                borderRadius: 6
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: { title: { display: true, text: 'Daily Study Hours Bracket', color: textColor }, grid: { display: false }, ticks: { color: textColor } },
+                y: { title: { display: true, text: 'Avg Score (%)', color: textColor }, min: 0, max: 100, grid: { color: gridColor }, ticks: { color: textColor } }
+            },
+            plugins: { legend: { display: false } }
+        }
+    });
+
+    // Components Bar Chart
+    const compCtx = document.getElementById('componentsBarChart').getContext('2d');
+    new Chart(compCtx, {
+        type: 'bar',
+        data: {
+            labels: ['Attendance', 'Internal Marks', 'Assignments', 'Previous Semester', 'Participation', 'Composite Overall'],
+            datasets: [{
+                label: 'Class Average (%)',
+                data: [
+                    {{ comp_averages.attendance }},
+                    {{ comp_averages.internal_marks }},
+                    {{ comp_averages.assignment_score }},
+                    {{ comp_averages.previous_sem_marks }},
+                    {{ comp_averages.participation }},
+                    {{ comp_averages.overall_score }}
+                ],
+                backgroundColor: [
+                    '#4f46e5', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'
+                ],
+                borderRadius: 8
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: { min: 0, max: 100, grid: { color: gridColor }, ticks: { color: textColor } },
+                x: { grid: { display: false }, ticks: { color: textColor } }
+            },
+            plugins: { legend: { display: false } }
+        }
+    });
+
+    // Tier Pie Chart
+    const pieCtx = document.getElementById('tierPieChart').getContext('2d');
+    new Chart(pieCtx, {
+        type: 'pie',
+        data: {
+            labels: ['Excellent', 'Average', 'At Risk'],
+            datasets: [{
+                data: [{{ tier_counts.excellent }}, {{ tier_counts.average }}, {{ tier_counts.at_risk }}],
+                backgroundColor: ['#10b981', '#f59e0b', '#ef4444'],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'bottom', labels: { color: textColor } }
+            }
+        }
+    });
+</script>
+{% endblock %}
